@@ -41,10 +41,24 @@ INTERVAL = 10
 PROCESS = 25
 
 #----------------------------CLASSES---------------------------
-class memory:
+class memory():
         def __init__(self, env, cpus, ram_capacity):
             self.cpu = simpPI.Resource(env, cpus)
             self.ram = simpPI.Container(env, init = ram_capacity, capacity = ram_capacity)
 
+class process():
+    def __init__(self, id, env):
+        self.env = env
+        self.name = id
+        self.memory = rnd.randint(1,10)
+        self.instructions = rnd.randint(1,10)
+    
+    def _getname_(self):
+            return self.name
 
+    def __getmemory__(self):
+            return self.memory
+        
+    def _getinstructions_(self):
+            return self.instructions      
 
