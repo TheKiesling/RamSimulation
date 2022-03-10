@@ -33,26 +33,18 @@
 import simpy as simpPI; #SIMP de PI 
 import random as rnd;
 
-class program():
-    def __init__(self, id, memory, instructions, env):
-        self.env = env
-        self.name=id
-        self.action = env.process(self.new_program(memory, instructions))
-    
-    def new_program(self,memory, instructions):
-        print ("%5.1f %s new (memory: %f)" %(env.now,self.name,memory))
-        yield env.timeout(memory)
-        print ("%5.1f %s ready" %(env.now,self.name))
+#----------------------------VARIABLES-------------------------
+RANDOM_SEED = 314 
+AMOUNT_CPU = 1
+CAPACITY = 100
+INTERVAL = 10
+PROCESS = 25
 
-env = simpPI.Environment()
-amount_programs = 25;
+#----------------------------CLASSES---------------------------
+class memory:
+        def __init__(self, env, cpus, ram_capacity):
+            self.cpu = simpPI.Resource(env, cpus)
+            self.ram = simpPI.Container(env, init = ram_capacity, capacity = ram_capacity)
 
-for i in range(amount_programs):
-    memory = rnd.randint(1,10)
-    instructions = rnd.randint(1,10)
-    id = "Program" + str(i)
-    p = program(id,memory,instructions,env)
-
-env.run(until=100)
 
 
