@@ -30,66 +30,75 @@
         c) READY: when leaving the CPU and the randomly generated number is 2, then it goes back to the “ready” queue.
 '''
 
-from urllib.request import CacheFTPHandler
 import simpy as simpPI; #SIMP de PI 
 import random as rnd;
 
 #----------------------------VARIABLES-------------------------
-RANDOM_SEED = 314 
+RANDOM_SEED = 314159265358979323 #PI's Seed 
 AMOUNT_CPU = 1
 CAPACITY = 100
 INTERVAL = 10
 PROCESS = 25
 INSTRUCTIONS = 3
 
-#----------------------------CLASSES---------------------------
-class RAMMemory():
+#------------------------RAM-MEMORY CLASS----------------------
+#--- Container ---
+class RAM_Memory():
     def __init__(self, env):
-        self.cpu = simpPI.Resource(env, capacity = 1)
-        self.ram = simpPI.Container(env, init = 100, capacity = 100)
+        self.cpu = simpPI.Resource(env, capacity = AMOUNT_CPU) #Number of CPU
+        self.ram = simpPI.Container(env, init = CAPACITY, capacity = CAPACITY) #Memory Capacity
 
-class Program():
-    def __init__(self, id, env, RAM_Memory):
-        self.env = env
-        self.name = id
-        self.action = env.process(self.newProgram(self.name, RAM_Memory))
-    
-    def newProgram(self, id, RAM_Memory):
-        self.memory = rnd.randint(1,10)
-        print("-----------------------NEW---------------------------")
-        print(f'NEW: Process {id} at {env.now} with memory: {self.memory}')
-        print("-----------------------------------------------------")
-        print()
+  
+def Process(id, env, RAM_Memory):
+    #--- Atributtes ---
+    memory = rnd.randint(1,10)
+    instructions = rnd.randint(1,10)
+    start_time=0.0
+    finish_time=0.0
+    running= True
+
+                            #--- Actions ---
+    #--- NEW ---
+    print("-----------------------NEW---------------------------")
+    print(f'NEW: Process {id} at {env.now} with memory: {memory}')
+    print("-----------------------------------------------------")
+    print()
+    start_time = env.now
+    while running:
+
+        #--- Ready ---
         with RAM_Memory.cpu.request() as req:
             yield req
-            yield RAM_Memory.ram.get(self.memory)
-            self.readyProgram(id)
-    
-    def readyProgram(self, id):
-        self.instructions = rnd.randint(1,10)
-        print("-----------------------READY--------------------------")
-        print(f'READY: Process {id} at {env.now} with {self.instructions} instructions')
-        print("-----------------------------------------------------")
-        print()
-    
-    
-    def _getname_(self):
-            return self.name
+            yield env.timeout(1)
+            yield RAM_Memory.ram.get(memory)
+            print("-----------------------READY-------------------------")
+            print(f'READY: Process {id} at {env.now} with {instructions} instructions')
+            print("-----------------------------------------------------")
+            print()
 
-    def __getmemory__(self):
-            return self.memory
-        
-    def _getinstructions_(self):
-            return self.instructions      
+        #--- Running ---
+        with RAM_Memory.cpu.request() as req:
+            yield req
+            yield env.timeout(1)
+            instructions -= INSTRUCTIONS
+            print("----------------------RUNNING------------------------")
+            print(f'RUNNING: Process {id} at {env.now}')
+            print("-----------------------------------------------------")
+            print()
+
+        #Finalize the attention of the CPU
+        if (instructions > 0):
+            next_state = rnd.randint(1,2)
+    
 
 def newProcess(env, RAM_Memory):
     for i in range(PROCESS):
-        Program(i, env, RAM_Memory)
-        t = rnd.expovariate(1.0 / INTERVAL)
-        yield env.timeout(t)
+        env.process(Process(i, env, RAM_Memory))
+        delay = rnd.expovariate(1.0 / INTERVAL)
+        yield env.timeout(delay)
     
 
 env = simpPI.Environment()
-RAM_Memory = RAMMemory(env)
+RAM_Memory = RAM_Memory(env)
 env.process(newProcess(env, RAM_Memory))
-env.run(100000)
+env.run()
