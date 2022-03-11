@@ -82,13 +82,32 @@ def Process(id, env, RAM_Memory):
             yield env.timeout(1)
             instructions -= INSTRUCTIONS
             print("----------------------RUNNING------------------------")
-            print(f'RUNNING: Process {id} at {env.now}')
+            print(f'RUNNING: Process {id} at {env.now} decreasing {INSTRUCTIONS} instructions')
             print("-----------------------------------------------------")
             print()
 
         #Finalize the attention of the CPU
         if (instructions > 0):
             next_state = rnd.randint(1,2)
+            if (next_state == 1):
+
+                #--- Waiting ---
+                with RAM_Memory.cpu.request() as req:
+                    yield req
+                    yield env.timeout(1)
+                    yield RAM_Memory.ram.put(memory)
+                    print("----------------------WAITING------------------------")
+                    print(f'WAITING: Process {id} at {env.now}')
+                    print("-----------------------------------------------------")
+                    print()
+
+            else:
+
+                #--- Ready ---
+                yield RAM_Memory.ram.put(memory)
+
+        else:
+            return True
     
 
 def newProcess(env, RAM_Memory):
