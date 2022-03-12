@@ -30,11 +30,12 @@
         c) READY: when leaving the CPU and the randomly generated number is 2, then it goes back to the “ready” queue.
 '''
 
-import simpy as simpPI; #SIMP de PI 
-import random as rnd;
+import simpy as simpPI #SIMP de PI 
+import random as rnd
+import statistics as stats
 
 #----------------------------VARIABLES-------------------------
-RANDOM_SEED = 314159265358979323 #PI's Seed 
+RANDOM_SEED = 314159265358979323 #PI's Seed
 AMOUNT_CPU = 1
 CAPACITY = 100
 INTERVAL = 10
@@ -48,14 +49,16 @@ class RAM_Memory():
         self.cpu = simpPI.Resource(env, capacity = AMOUNT_CPU) #Number of CPU
         self.ram = simpPI.Container(env, init = CAPACITY, capacity = CAPACITY) #Memory Capacity
 
-  
+time = 0 
+times = []
+
 def Process(id, env, RAM_Memory):
     #--- Atributtes ---
     memory = rnd.randint(1,10)
     instructions = rnd.randint(1,10)
     start_time=0.0
     finish_time=0.0
-    running= True
+    running = True
 
                             #--- Actions ---
     #--- NEW ---
@@ -107,7 +110,23 @@ def Process(id, env, RAM_Memory):
                 yield RAM_Memory.ram.put(memory)
 
         else:
-            return True
+            #--- Terminated ---
+            with RAM_Memory.cpu.request() as req:
+                yield req
+                yield env.timeout(1)
+                yield RAM_Memory.ram.put(memory)
+                running = False
+                print("--------------------TERMINATED-----------------------")
+                print(f'TERMINATED: Process {id} ends at {env.now} asigment: {memory}')
+                print("-----------------------------------------------------")
+                print()
+                finish_time=env.now #End of the process
+
+                #--- Stats ---
+                global time
+                global times
+                time += finish_time-start_time
+                times.append(finish_time-start_time)
     
 
 def newProcess(env, RAM_Memory):
@@ -116,8 +135,15 @@ def newProcess(env, RAM_Memory):
         delay = rnd.expovariate(1.0 / INTERVAL)
         yield env.timeout(delay)
     
-
+rnd.seed(RANDOM_SEED)
 env = simpPI.Environment()
 RAM_Memory = RAM_Memory(env)
 env.process(newProcess(env, RAM_Memory))
 env.run()
+
+#--- Stats ---
+average = time/PROCESS
+desvest = stats.stdev(times)
+
+print(f"Average: {average}")
+print(f"Desvest: {desvest} ")
